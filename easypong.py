@@ -7,7 +7,7 @@ from easytypes import Vec2
 
 def main():
     SDL_Init(SDL_INIT_EVERYTHING)
-    graphics = Graphics(WINDOW_SIZE)
+    graphics = Graphics("Easy Pong", WINDOW_SIZE)
     arena = Arena(Vec2(*ARENA_SIZE), graphics)
     arena.play()
 

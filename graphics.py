@@ -2,10 +2,10 @@ from sdl2 import *
 from settings import *
 
 class Graphics:
-    def __init__(self, size):
+    def __init__(self, title, size):
         SDL_Init(SDL_INIT_VIDEO)
         self.window = SDL_CreateWindow(
-                b"Neighbours", 
+                title.encode(), 
                 SDL_WINDOWPOS_CENTERED,
                 SDL_WINDOWPOS_CENTERED,
                 *size,

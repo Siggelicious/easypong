@@ -1,10 +1,10 @@
 class Vec2:
-    def __init__(self, x = 0.0, y = 0.0):
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
 class Box:
-    def __init__(self, size = Vec2(), speed = 0.0, pos = Vec2(), vel = Vec2()):
+    def __init__(self, size, speed, pos, vel):
         self.size = size
         self.speed = speed
         self.pos = pos
