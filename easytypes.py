@@ -3,6 +3,14 @@ class Vec2:
         self.x = x
         self.y = y
 
+class CollisionData:
+    def __init__(self, time, a, b, normal_a, normal_b):
+        self.time = time
+        self.a = a
+        self.b = b
+        self.normal_a = normal_a
+        self.normal_b = normal_b
+
 class Box:
     def __init__(self, size, speed, pos, vel):
         self.size = size
