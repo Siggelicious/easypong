@@ -47,72 +47,71 @@ class Arena:
         self.set_ball_velocity_from_angle(angle)
 
     def test_for_collision(self, player, dt):
-        dist_short = Vec2(
-                    player.pos.x + player.size.x - self.ball.pos.x,
-                    player.pos.y + player.size.y - self.ball.pos.y,
+        resulting_velocity = Vec2(
+                    self.ball.vel.x - player.vel.x,
+                    self.ball.vel.y - player.vel.y
                 )
-        dist_long = Vec2(
+        dist_near = Vec2(
                     player.pos.x - (self.ball.pos.x + self.ball.size.x),
                     player.pos.y - (self.ball.pos.y + self.ball.size.y)
                 )
-
-        if abs(dist_short.x) > abs(dist_long.x):
-            dist_short.x, dist_long.x = dist_long.x, dist_short.x
-
-        if abs(dist_short.y) > abs(dist_long.y):
-            dist_short.y, dist_long.y = dist_long.y, dist_short.y
-
-        entry_time = Vec2(0.0, 0.0)
-        exit_time = Vec2(0.0, 0.0)
-
-        if self.ball.vel.x == 0.0:
-            entry_time.x = -math.inf
-            exit_time.x = math.inf
-
-        else:
-            entry_time.x = dist_short.x / self.ball.vel.x
-            exit_time.x = dist_long.x / self.ball.vel.x
-
-        if self.ball.vel.y == 0.0:
-            entry_time.y = -math.inf
-            exit_time.y = math.inf
-
-        else:
-            entry_time.y = dist_short.y / self.ball.vel.y
-            exit_time.y = dist_long.y / self.ball.vel.y
-        
-        entry_time_real = max(entry_time.x, entry_time.y)
-        exit_time_real = min(exit_time.y, exit_time.y)
+        dist_far = Vec2(
+                    player.pos.x + player.size.x - self.ball.pos.x,
+                    player.pos.y + player.size.y - self.ball.pos.y
+                )
+        time_near = Vec2(0.0, 0.0)
+        time_far = Vec2(0.0, 0.0)
         normal = Vec2(0.0, 0.0)
 
-        if (entry_time_real > exit_time_real or (entry_time.x <= 0.0 and entry_time.y <= 0.0) or entry_time.x > dt or entry_time.y > dt):
-            return False, 0.0, normal 
+        if resulting_velocity.x == 0:
+            time_near.x = math.inf * (dist_near.x / abs(dist_near.x))
+            time_far.x = math.inf * (dist_far.x / abs(dist_far.x))
 
+        else: 
+            time_near.x = dist_near.x / resulting_velocity.x
+            time_far.x = dist_far.x / resulting_velocity.x
+
+        if resulting_velocity.y == 0:
+            time_near.y = math.inf * (dist_near.y / abs(dist_near.y))
+            time_far.y = math.inf * (dist_far.y / abs(dist_far.y))
+
+        else: 
+            time_near.y = dist_near.y / resulting_velocity.y
+            time_far.y = dist_far.y / resulting_velocity.y
+
+        if time_near.x > time_far.x:
+            time_near.x, time_far.x = time_far.x, time_near.x
+
+        if time_near.y > time_far.y:
+            time_near.y, time_far.y = time_far.y, time_near.y
+
+        time_near_real = max(time_near.x, time_near.x)
+        time_far_real = min(time_far.x, time_far.y)
+
+        if time_near.x > time_far.y or time_near.y > time_far.x or time_near_real < 0.0 or time_far_real < 0.0 or time_near_real > dt:
+            return False, 0.0, normal
+
+        if time_near.x > time_near.y:
+            normal.x = abs(resulting_velocity.x) / resulting_velocity.x
+        
         else:
-            if entry_time.x > entry_time.y:
-                normal.x = -1.0 if dist_short.x < 0.0 else 1.0
+            normal.y = abs(resulting_velocity.y) / resulting_velocity.y
 
-            else:
-                normal.y = -1.0 if dist_short.y < 0.0 else 1.0
-
-        return True, entry_time_real, normal 
-
-    def update_ball_position(self, dt):
-        self.ball.pos.x += self.ball.vel.x * dt
-        self.ball.pos.y += self.ball.vel.y * dt
+        return True, time_near_real, normal
 
     def set_ball_velocity_from_angle(self, angle):
         self.ball.vel.x = self.ball.speed * math.cos(angle)
         self.ball.vel.y = self.ball.speed * math.sin(angle) 
 
-    def resolve_ball_position(self, dt):
+    def resolve_collisions(self, dt):
         for player in self.players:
             occurred, time_of_collision, normal = self.test_for_collision(player, dt)
             
             if occurred:
                 print("Collision happened")
                 print(str(time_of_collision))
-                self.update_ball_position(time_of_collision)
+                player.apply_velocity(time_of_collision)
+                self.ball.apply_velocity(time_of_collision)
 
                 if not normal.y == 0.0:
                     print("y normal")
@@ -130,28 +129,22 @@ class Arena:
         
         if self.ball.pos.y + self.ball.vel.y * dt < 0.0:
             time_of_collision = abs(self.ball.pos.y / self.ball.vel.y)
-            self.update_ball_position(time_of_collision)
+            self.ball.apply_velocity(time_of_collision)
             self.ball.vel.y *= -1.0
             return dt - time_of_collision
         
         elif self.ball.pos.y + self.ball.size.y + self.ball.vel.y * dt > self.size.y:
             time_of_collision = abs((self.size.y - (self.ball.pos.y + self.ball.size.y)) / self.ball.vel.y)
-            self.update_ball_position(time_of_collision)
+            self.ball.apply_velocity(time_of_collision)
             self.ball.vel.y *= -1.0
             return dt - time_of_collision
 
-        self.update_ball_position(dt)
+        self.ball.apply_velocity(dt)
         return 0.0
 
     def update_positions(self, dt):
-        for player in self.players:
-            floor = self.size.y - player.size.y
-            new_pos = player.pos.y + player.vel.y * dt
-            new_pos = 0 if new_pos < 0 else floor if new_pos > floor else new_pos
-            player.pos.y = new_pos
-                    
         while dt > 0.0: 
-            dt = self.resolve_ball_position(dt)
+            dt = self.resolve_collisions(dt)
 
     def render(self):
         self.graphics.fill_rect((0, 0, *WINDOW_SIZE), (0, 0, 0, 255))

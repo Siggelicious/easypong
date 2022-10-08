@@ -9,3 +9,7 @@ class Box:
         self.speed = speed
         self.pos = pos
         self.vel = vel
+
+    def apply_velocity(self, dt):
+        self.pos.x += self.vel.x * dt
+        self.pos.y += self.vel.y * dt
