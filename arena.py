@@ -212,5 +212,10 @@ class Arena:
                 self.score[0] += 1
                 self.serve(math.pi)
 
+            for s in self.score:
+                if s > 4:
+                    self.score = [0, 0]
+                    break
+
             self.render()
 
