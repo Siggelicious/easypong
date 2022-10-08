@@ -1,9 +1,12 @@
 from sdl2 import *
+from sdl2.sdlttf import *
 from settings import *
 
 class Graphics:
     def __init__(self, title, size):
         SDL_Init(SDL_INIT_VIDEO)
+        TTF_Init()
+        self.font = TTF_OpenFont(b"8bit16.ttf", 24)
         self.window = SDL_CreateWindow(
                 title.encode(), 
                 SDL_WINDOWPOS_CENTERED,
@@ -18,9 +21,12 @@ class Graphics:
             )
 
     def __del__(self):
-        SDL_DestroyRenderer(self.renderer)
-        SDL_DestroyWindow(self.window)
         SDL_Quit()
+
+    def render_text(self, text, rect, color):
+        text_surface = TTF_RenderText_Solid(self.font, text.encode(), SDL_Color(*color))
+        text_texture = SDL_CreateTextureFromSurface(self.renderer, text_surface)
+        SDL_RenderCopy(self.renderer, text_texture, None, SDL_Rect(*rect)) 
 
     def fill_rect(self, rect, color):
         SDL_SetRenderDrawColor(self.renderer, *color)

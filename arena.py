@@ -27,7 +27,7 @@ def player_collision_callback(player, _, normal):
 
 def ball_collision_callback(ball, box, normal):
     if not normal.y == 0.0:
-        ball.vel.y *= -1.0
+        ball.vel.y = abs(ball.vel.y) * -normal.y
     
     else:
         dist_from_center = (box.pos.y + box.size.y / 2.0) - (ball.pos.y + ball.size.y / 2.0)
@@ -44,8 +44,8 @@ class Arena:
         self.players = [Box(Vec2(*PLAYER_SIZE), PLAYER_SPEED, Vec2(0.0, 0.0), Vec2(0.0, 0.0)) for _ in range(0,2)]
         self.ball = Box(Vec2(*BALL_SIZE), BALL_SPEED, Vec2(0.0, 0.0), Vec2(0.0, 0.0))
         self.walls = [
-            Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, 0.0), Vec2(0.0, 0.0)),
-            Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, self.size.y - 10.0), Vec2(0., 0.0)),
+            Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, -10.0), Vec2(0.0, 0.0)),
+            Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, self.size.y), Vec2(0., 0.0)),
         ]
         self.boxes = []
         self.boxes.extend(self.players)
@@ -101,16 +101,16 @@ class Arena:
         time_far = Vec2(0.0, 0.0)
 
         if resulting_velocity.x == 0:
-            time_near.x = math.inf * (dist_near.x / abs(dist_near.x))
-            time_far.x = math.inf * (dist_far.x / abs(dist_far.x))
+            time_near.x = math.inf * (-1.0 if dist_near.x == 0.0 else dist_near.x / abs(dist_near.x))
+            time_far.x = math.inf * (1.0 if dist_far.x == 0.0 else dist_far.x / abs(dist_far.x))
 
         else: 
             time_near.x = dist_near.x / resulting_velocity.x
             time_far.x = dist_far.x / resulting_velocity.x
 
         if resulting_velocity.y == 0:
-            time_near.y = math.inf * (dist_near.y / abs(dist_near.y))
-            time_far.y = math.inf * (dist_far.y / abs(dist_far.y))
+            time_near.y = math.inf * (-1.0 if dist_near.y == 0.0 else dist_near.y / abs(dist_near.y))
+            time_far.y = math.inf * (1.0 if dist_far.y == 0.0 else dist_far.y / abs(dist_far.y))
 
         else: 
             time_near.y = dist_near.y / resulting_velocity.y
@@ -122,7 +122,7 @@ class Arena:
         if time_near.y > time_far.y:
             time_near.y, time_far.y = time_far.y, time_near.y
 
-        time_near_real = max(time_near.x, time_near.x)
+        time_near_real = max(time_near.x, time_near.y)
         time_far_real = min(time_far.x, time_far.y)
 
         if time_near.x > time_far.y or time_near.y > time_far.x or time_near_real < 0.0 or time_far_real < 0.0 or time_near_real > dt:
@@ -146,7 +146,6 @@ class Arena:
                 occurred, time_of_collision, normal = self.test_for_collision(a, b, dt)         
 
                 if occurred:
-                    print("Collision happened")
                     normal_a = normal
                     normal_b = Vec2(normal.x * -1.0, normal.y * -1.0)
                     collision_data = CollisionData(time_of_collision, a, b, normal_a, normal_b)
@@ -183,7 +182,9 @@ class Arena:
                         (round(box.pos.x), round(box.pos.y), round(box.size.x), round(box.size.y)), 
                         (255, 255, 255, 255)
                     )
-        
+
+        self.graphics.render_text(str(self.score[0]), (round(self.size.x / 4.0) - 50, 10, 100, 100), (255, 255, 255, 255))
+        self.graphics.render_text(str(self.score[1]), (round(self.size.x / 4.0 * 3.0) - 50, 10, 100, 100), (255, 255, 255, 255))
         self.graphics.present()
 
     def play(self):
@@ -204,9 +205,11 @@ class Arena:
             self.update_positions(dt)
 
             if (self.ball.pos.x + self.ball.size.x) < 0.0:
+                self.score[1] += 1
                 self.serve(0.0)
 
             elif self.ball.pos.x > self.size.x:
+                self.score[0] += 1
                 self.serve(math.pi)
 
             self.render()
