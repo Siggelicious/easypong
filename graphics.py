@@ -27,6 +27,8 @@ class Graphics:
         text_surface = TTF_RenderText_Solid(self.font, text.encode(), SDL_Color(*color))
         text_texture = SDL_CreateTextureFromSurface(self.renderer, text_surface)
         SDL_RenderCopy(self.renderer, text_texture, None, SDL_Rect(*rect)) 
+        SDL_DestroyTexture(text_texture)
+        SDL_FreeSurface(text_surface)
 
     def fill_rect(self, rect, color):
         SDL_SetRenderDrawColor(self.renderer, *color)
