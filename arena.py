@@ -8,18 +8,25 @@ from easytypes import Vec2
 
 MAPS = [
     {
-        -1 : SDL_SCANCODE_W,
-        1 : SDL_SCANCODE_S
+        -1 : SDL_SCANCODE_Q,
+        1 : SDL_SCANCODE_A
     },
     {
-        -1 : SDL_SCANCODE_I,
-        1 : SDL_SCANCODE_K
+        -1 : SDL_SCANCODE_UP,
+        1 : SDL_SCANCODE_DOWN
     }
 ]
 
 def set_box_velocity_from_angle(box, angle):
     box.vel.x = box.speed * math.cos(angle)
     box.vel.y = box.speed * math.sin(angle) 
+
+def random_60_deg_angle():
+    direction = random.randint(0, 1)
+    angle_origin = direction * math.pi
+    angle_difference = random.uniform(-math.pi / 6.0, math.pi / 6.0)
+    adjusted_angle = angle_origin + angle_difference
+    return adjusted_angle
 
 def player_collision_callback(player, _, normal):
     if not normal.y == 0.0:
@@ -34,6 +41,7 @@ def ball_collision_callback(ball, box, normal):
         angle_origin = (math.pi / 2.0) * (1.0 + normal.x)
         angle_difference = (math.pi / 3.0) * (dist_from_center / ((box.size.y + ball.size.y) / 2.0))
         angle_adjusted = angle_origin + normal.x * angle_difference
+        ball.speed *= 1.05
         set_box_velocity_from_angle(ball, angle_adjusted)
 
 class Arena:
@@ -42,7 +50,7 @@ class Arena:
         self.graphics = graphics
         random.seed(time.time())
         self.players = [Box(Vec2(*PLAYER_SIZE), PLAYER_SPEED, Vec2(0.0, 0.0), Vec2(0.0, 0.0)) for _ in range(0,2)]
-        self.ball = Box(Vec2(*BALL_SIZE), BALL_SPEED, Vec2(0.0, 0.0), Vec2(0.0, 0.0))
+        self.ball = Box(Vec2(*BALL_SIZE), 0.0, Vec2(0.0, 0.0), Vec2(0.0, 0.0))
         self.walls = [
             Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, -10.0), Vec2(0.0, 0.0)),
             Box(Vec2(self.size.x, 10.0), 0.0, Vec2(0.0, self.size.y), Vec2(0., 0.0)),
@@ -77,6 +85,7 @@ class Arena:
         player1.pos.x, player1.pos.y = MARGIN, (self.size.y - player1.size.y) / 2.0 
         player2.pos.x, player2.pos.y = self.size.x - MARGIN - player2.size.x, (self.size.y - player2.size.y) / 2.0 
         self.ball.pos.x, self.ball.pos.y = (self.size.x - self.ball.size.x) / 2.0, (self.size.y - self.ball.size.y) / 2.0
+        self.ball.speed = BALL_SPEED + random.uniform(-BALL_SPEED_FLUCTUATION, BALL_SPEED_FLUCTUATION)
         set_box_velocity_from_angle(self.ball, angle)
 
     def test_for_collision(self, a, b, dt):
@@ -189,7 +198,7 @@ class Arena:
 
     def play(self):
         quit = False
-        self.serve(random.randint(0, 1) * math.pi)
+        self.serve(random_60_deg_angle())
         event = SDL_Event()
         old_time = new_time = time.process_time_ns()
 
@@ -203,14 +212,15 @@ class Arena:
             dt = (new_time - old_time) / 1000000000
             old_time = new_time
             self.update_positions(dt)
+            
 
             if (self.ball.pos.x + self.ball.size.x) < 0.0:
                 self.score[1] += 1
-                self.serve(0.0)
+                self.serve(random_60_deg_angle())
 
             elif self.ball.pos.x > self.size.x:
                 self.score[0] += 1
-                self.serve(math.pi)
+                self.serve(random_60_deg_angle())
 
             for s in self.score:
                 if s > 4:
